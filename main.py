@@ -1,128 +1,93 @@
 import pygame
-import time
 import random
+import sys
 
-# Initialize Pygame
+# Initialize pygame
 pygame.init()
 
-# Colors
-white = (255, 255, 255)
-yellow = (255, 255, 102)
-black = (200, 100, 100)
-red = (0, 0, 0)
-green = (0, 255, 0)
-blue = (50, 153, 213)
-
-# Display dimensions
-width, height = 600, 400
-dis = pygame.display.set_mode((width, height))
-pygame.display.set_caption('Snake Game')
-
 # Game settings
-clock = pygame.time.Clock()
-snake_block = 10
-snake_speed = 13
+SCREEN_WIDTH, SCREEN_HEIGHT = 400, 400
+GRID_SIZE = 4  # 4x4 grid (16 cards)
+CARD_SIZE = SCREEN_WIDTH // GRID_SIZE
+MARGIN = 5
 
-# Font settings
-font_style = pygame.font.SysFont(None, 35)
-score_font = pygame.font.SysFont(None, 25)
+# Colors
+BACKGROUND_COLOR = (50, 168, 82)
+CARD_COLOR = (245, 245, 245)
+HIGHLIGHT_COLOR = (255, 255, 153)
+TEXT_COLOR = (0, 0, 0)
 
-# Functions
-def display_score(score):
-    value = score_font.render("Score: " + str(score), True, white)
-    dis.blit(value, [width *0.45, height*0.05])
+# Initialize screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Memory Card Game")
 
-def our_snake(snake_block, snake_list):
-    for index, x in enumerate(snake_list):
-        color = red if index == len(snake_list) - 1 else green
-        pygame.draw.rect(dis, color, [x[0], x[1], snake_block, snake_block])
+# Load font
+font = pygame.font.Font(None, 48)
 
-def message(msg, color):
-    mesg = font_style.render(msg, True, color)
-    dis.blit(mesg, [width / 6, height / 3])
+# Initialize cards and game state
+cards = list(range(GRID_SIZE ** 2 // 2)) * 2
+random.shuffle(cards)
+revealed = [[False] * GRID_SIZE for _ in range(GRID_SIZE)]
+first_card = None  # Stores the first card clicked for matching
+matches_found = 0
 
-def game_loop():
-    game_over = False
-    game_close = False
+# Utility functions
+def draw_cards():
+    for row in range(GRID_SIZE):
+        for col in range(GRID_SIZE):
+            x, y = col * CARD_SIZE + MARGIN, row * CARD_SIZE + MARGIN
+            card_rect = pygame.Rect(x, y, CARD_SIZE - 2 * MARGIN, CARD_SIZE - 2 * MARGIN)
+            
+            # Check if card should be revealed
+            if revealed[row][col]:
+                pygame.draw.rect(screen, HIGHLIGHT_COLOR, card_rect)
+                text_surface = font.render(str(cards[row * GRID_SIZE + col]), True, TEXT_COLOR)
+                text_rect = text_surface.get_rect(center=card_rect.center)
+                screen.blit(text_surface, text_rect)
+            else:
+                pygame.draw.rect(screen, CARD_COLOR, card_rect)
 
-    x1 = width / 2
-    y1 = height / 2
+def get_card_at_pos(pos):
+    x, y = pos
+    row, col = y // CARD_SIZE, x // CARD_SIZE
+    if 0 <= row < GRID_SIZE and 0 <= col < GRID_SIZE:
+        return row, col
+    return None
 
-    x1_change = 0
-    y1_change = 0
+# Main game loop
+running = True
+while running:
+    screen.fill(BACKGROUND_COLOR)
+    draw_cards()
+    pygame.display.flip()
 
-    snake_list = []
-    length_of_snake = 1
-
-    # Food position
-    foodx = round(random.randrange(0, width - snake_block) / 10.0) * 10.0
-    foody = round(random.randrange(0, height - snake_block) / 10.0) * 10.0
-
-    while not game_over:
-
-        while game_close:
-            dis.fill(black)
-            message("You Lost! Press Q-Quit or C-Play Again", red)
-            display_score(length_of_snake - 1)
-            pygame.display.update()
-
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        game_over = True
-                        game_close = False
-                    if event.key == pygame.K_c:
-                        game_loop()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x1_change = -snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x1_change = snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_UP:
-                    y1_change = -snake_block
-                    x1_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y1_change = snake_block
-                    x1_change = 0
-
-        # Boundaries
-        if x1 >= width or x1 < 0 or y1 >= height or y1 < 0:
-            game_close = True
-
-        x1 += x1_change
-        y1 += y1_change
-        dis.fill(black)
-        pygame.draw.rect(dis, yellow, [foodx, foody, snake_block, snake_block])
-        snake_head = [x1, y1]
-        snake_list.append(snake_head)
-        if len(snake_list) > length_of_snake:
-            del snake_list[0]
-
-        for x in snake_list[:-1]:
-            if x == snake_head:
-                game_close = True
-
-        our_snake(snake_block, snake_list)
-        display_score(length_of_snake - 1)
-
-        pygame.display.update()
-
-        # Snake eats food
-        if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, width - snake_block) / 10.0) * 10.0
-            foody = round(random.randrange(0, height - snake_block) / 10.0) * 10.0
-            length_of_snake += 1
-
-        clock.tick(snake_speed)
-
-    pygame.quit()
-    quit()
-
-# Run the game
-game_loop()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            card_pos = get_card_at_pos(pos)
+            
+            if card_pos and not revealed[card_pos[0]][card_pos[1]]:
+                row, col = card_pos
+                revealed[row][col] = True
+                
+                if first_card is None:
+                    first_card = (row, col)
+                else:
+                    # Check for match
+                    first_row, first_col = first_card
+                    if cards[first_row * GRID_SIZE + first_col] == cards[row * GRID_SIZE + col]:
+                        matches_found += 1
+                        if matches_found == GRID_SIZE ** 2 // 2:
+                            print("You matched all pairs! Game over.")
+                            pygame.time.wait(2000)
+                            pygame.quit()
+                            sys.exit()
+                    else:
+                        pygame.display.flip()
+                        pygame.time.wait(1000)
+                        revealed[first_row][first_col] = False
+                        revealed[row][col] = False
+                    first_card = None
