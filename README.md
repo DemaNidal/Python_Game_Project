@@ -24,14 +24,14 @@ This is a simple Memory Card Game built with Python and Pygame. Players try to m
 
 ## Installation
 
-# Clone the repository
+ Clone the repository
 git clone https://github.com/DemaNidal/Python_Game_Project
 
-# Navigate to the project directory
+ Navigate to the project directory
 cd Python_Game_Project
 
-# Install the Pygame library
+ Install the Pygame library
 pip install pygame
 
-# Run the game
+ Run the game
 python memory_card_game.py
